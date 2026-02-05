@@ -1,0 +1,179 @@
+{
+    "risk_score": 92,
+    "risk_level": "critical",
+    "inline_comments": [
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "category": "security",
+            "subtype": "sql-injection",
+            "severity": "critical",
+            "confidence": 0.98,
+            "file_path": "src/api/auth.ts",
+            "line_start": 8,
+            "line_end": 8,
+            "message": "**SQL Injection**: User input is directly concatenated into SQL query. An attacker can bypass authentication or extract data by injecting malicious SQL.\n\n**Evidence**: `SELECT * FROM users WHERE username = '${username}'`\n\n**Fix**: Use parameterized queries:\n```ts\nconst user = await db.query('SELECT * FROM users WHERE username = $1 AND password = $2', [username, password]);\n```",
+            "evidence": "const query = `SELECT * FROM users WHERE username = '${username}'...`",
+            "suggested_fix": "Use parameterized queries with $1, $2 placeholders",
+            "cwe": "CWE-89",
+            "owasp_tag": "A03:2021",
+            "source_tool": "semgrep",
+            "is_llm_generated": false
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440002",
+            "category": "security",
+            "subtype": "hardcoded-secret",
+            "severity": "high",
+            "confidence": 0.95,
+            "file_path": "src/api/auth.ts",
+            "line_start": 13,
+            "line_end": 13,
+            "message": "**Hardcoded Secret**: JWT signing key is hardcoded in source code. If this repository becomes public, attackers can forge valid JWT tokens.\n\n**Fix**: Use environment variable:\n```ts\nconst token = jwt.sign({ id: user.rows[0].id }, process.env.JWT_SECRET);\n```",
+            "evidence": "'super-secret-key-123'",
+            "suggested_fix": "Move secret to environment variable JWT_SECRET",
+            "cwe": "CWE-798",
+            "owasp_tag": "A02:2021",
+            "source_tool": "semgrep",
+            "is_llm_generated": false
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440003",
+            "category": "security",
+            "subtype": "command-injection",
+            "severity": "critical",
+            "confidence": 0.97,
+            "file_path": "src/api/auth.ts",
+            "line_start": 43,
+            "line_end": 43,
+            "message": "**Command Injection**: User-controlled input is passed directly to exec(). An attacker can execute arbitrary commands on the server.\n\n**Evidence**: `exec(\\`rm -rf /data/users/${userId}\\`)`\n\n**Fix**: Validate userId and use safe file operations:\n```ts\nif (!/^[a-zA-Z0-9-]+$/.test(userId)) throw new Error('Invalid user ID');\nawait fs.rm(`/data/users/${userId}`, { recursive: true });\n```",
+            "evidence": "exec(`rm -rf /data/users/${userId}`)",
+            "suggested_fix": "Validate input and use fs.rm() instead of exec()",
+            "cwe": "CWE-78",
+            "owasp_tag": "A03:2021",
+            "source_tool": "semgrep",
+            "is_llm_generated": false
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440004",
+            "category": "security",
+            "subtype": "sensitive-data-exposure",
+            "severity": "high",
+            "confidence": 0.92,
+            "file_path": "src/api/auth.ts",
+            "line_start": 29,
+            "line_end": 32,
+            "message": "**Sensitive Data Exposure**: SSN and password hash are included in API response. Never expose sensitive personal information or password hashes.\n\n**Fix**: Remove sensitive fields from response:\n```ts\nres.json({ name: user.name, email: user.email });\n```",
+            "evidence": "ssn: user.ssn, password_hash: user.password_hash",
+            "suggested_fix": "Remove ssn and password_hash from response",
+            "cwe": "CWE-200",
+            "owasp_tag": "A01:2021",
+            "source_tool": "llm",
+            "is_llm_generated": true
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440005",
+            "category": "correctness",
+            "subtype": "null-dereference",
+            "severity": "medium",
+            "confidence": 0.85,
+            "file_path": "src/api/auth.ts",
+            "line_start": 27,
+            "line_end": 28,
+            "message": "**Potential Null Pointer**: `result.rows[0]` may be undefined if no user is found, causing runtime error when accessing properties.\n\n**Fix**: Add null check:\n```ts\nconst user = result.rows[0];\nif (!user) return res.status(404).json({ error: 'User not found' });\n```",
+            "evidence": "const user = result.rows[0];",
+            "suggested_fix": "Add null check before accessing user properties",
+            "source_tool": "llm",
+            "is_llm_generated": true
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440006",
+            "category": "performance",
+            "subtype": "redos",
+            "severity": "medium",
+            "confidence": 0.88,
+            "file_path": "src/api/auth.ts",
+            "line_start": 37,
+            "line_end": 37,
+            "message": "**ReDoS Vulnerability**: Regex with nested quantifiers `([a-zA-Z0-9]+)*` can cause catastrophic backtracking, leading to CPU exhaustion DoS.\n\n**Fix**: Use a non-backtracking email regex or validate differently:\n```ts\nconst regex = /^[^@]+@[^@]+\\.[^@]+$/;\n```",
+            "evidence": "/^([a-zA-Z0-9]+)*@/",
+            "suggested_fix": "Simplify regex to avoid nested quantifiers",
+            "cwe": "CWE-1333",
+            "source_tool": "semgrep",
+            "is_llm_generated": false
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440007",
+            "category": "dependency",
+            "subtype": "cve",
+            "severity": "high",
+            "confidence": 0.95,
+            "file_path": "package.json",
+            "line_start": 14,
+            "line_end": 14,
+            "message": "**CVE-2021-23337**: lodash@4.17.20 has a command injection vulnerability in the template function. Upgrade to lodash@4.17.21 or later.",
+            "evidence": "\"lodash\": \"4.17.20\"",
+            "suggested_fix": "Upgrade to lodash@4.17.21",
+            "cwe": "CWE-94",
+            "source_tool": "osv",
+            "is_llm_generated": false
+        },
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440008",
+            "category": "dependency",
+            "subtype": "cve",
+            "severity": "high",
+            "confidence": 0.95,
+            "file_path": "package.json",
+            "line_start": 15,
+            "line_end": 15,
+            "message": "**CVE-2021-3749**: axios@0.21.1 is vulnerable to SSRF via improper URL parsing. Upgrade to axios@0.21.2 or later.",
+            "evidence": "\"axios\": \"0.21.1\"",
+            "suggested_fix": "Upgrade to axios@0.21.2 or later",
+            "cwe": "CWE-918",
+            "source_tool": "osv",
+            "is_llm_generated": false
+        }
+    ],
+    "summary_markdown": "# 🚨 AI Code Review Summary\n\n## Risk Assessment: 92/100 (CRITICAL)\n\n## Executive Summary\n• Found 8 issue(s): 3 critical, 3 high, 2 medium\n🔴 **Critical**: SQL injection vulnerability in login function\n🔴 **Critical**: Command injection in deleteUser function\n🔴 **Critical**: Multiple hardcoded secrets detected\n🟠 **High**: Sensitive data (SSN, password hash) exposed in API response\n🟠 **High**: 2 vulnerable dependencies with known CVEs\n🟡 **Medium**: ReDoS vulnerability and null pointer risks\n\n## Issues by Category\n\n| Category | Count | Max Severity | Score |\n|----------|-------|--------------|-------|\n| 🔒 security | 5 | critical | 68.2 |\n| 📦 dependency | 2 | high | 14.0 |\n| ⚡ performance | 1 | medium | 5.3 |\n\n## Top Issues\n\n- 🔴 **src/api/auth.ts:8** - SQL injection in login query\n- 🔴 **src/api/auth.ts:43** - Command injection via exec()\n- 🟠 **src/api/auth.ts:13** - Hardcoded JWT secret\n- 🟠 **src/api/auth.ts:29-32** - SSN and password hash exposed\n- 🟠 **package.json:14** - Vulnerable lodash version\n\n## Review Statistics\n\n- **Files reviewed:** 2\n- **Issues found:** 8\n- **Tools used:** semgrep, osv-scanner, llm-openai\n- **Model:** gpt-4-turbo-preview\n- **Review time:** 4.2s\n\n---\n*Generated by AI Code Reviewer* 🤖",
+    "exec_summary_eli2": "• Found 8 issue(s): 3 critical, 3 high, 2 medium\n🔴 SQL injection vulnerability allows attackers to bypass authentication\n🔴 Command injection lets attackers execute arbitrary shell commands\n🔴 Hardcoded JWT secret can be used to forge tokens\n🟠 API exposes sensitive user data (SSN, password hash)\n🟠 2 dependencies have known security vulnerabilities",
+    "stats": {
+        "files_changed": 2,
+        "issues_found": 8,
+        "tools_run": [
+            "semgrep",
+            "osv-scanner",
+            "llm-openai"
+        ],
+        "model_used": "gpt-4-turbo-preview",
+        "latency_ms": 4215,
+        "lines_added": 48,
+        "lines_removed": 1
+    },
+    "category_breakdown": [
+        {
+            "category": "security",
+            "count": 5,
+            "max_severity": "critical",
+            "score_contribution": 68.2
+        },
+        {
+            "category": "dependency",
+            "count": 2,
+            "max_severity": "high",
+            "score_contribution": 14.0
+        },
+        {
+            "category": "performance",
+            "count": 1,
+            "max_severity": "medium",
+            "score_contribution": 5.3
+        }
+    ],
+    "completed_at": "2026-02-04T17:25:00.000Z",
+    "pr_info": {
+        "owner": "example-org",
+        "repo": "example-app",
+        "number": 42,
+        "sha": "abc123def456"
+    }
+}

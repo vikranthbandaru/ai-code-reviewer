@@ -1,0 +1,98 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    # Skip draft PRs
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install Python tools
+        run: |
+          pip install ruff bandit semgrep
+
+      - name: Install Go tools
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run AI Review
+        id: review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_APP_ID: ${{ secrets.AI_REVIEWER_APP_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.AI_REVIEWER_PRIVATE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_PROVIDER: openai
+          OPENAI_MODEL: gpt-4-turbo-preview
+          SEMGREP_RULES: auto
+          MAX_INLINE_COMMENTS: 10
+          RISK_THRESHOLD: 85
+        run: |
+          node apps/reviewer-worker/dist/index.js \
+            --owner "${{ github.repository_owner }}" \
+            --repo "${{ github.event.repository.name }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --sha "${{ github.event.pull_request.head.sha }}" \
+            --output review-output.json
+
+      - name: Upload Review Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-review-output
+          path: review-output.json
+          retention-days: 30
+
+      - name: Check Risk Threshold
+        run: |
+          RISK_SCORE=$(jq '.risk_score' review-output.json)
+          THRESHOLD=${{ vars.RISK_THRESHOLD || '85' }}
+          
+          echo "Risk Score: ${RISK_SCORE}"
+          echo "Threshold: ${THRESHOLD}"
+          
+          if (( $(echo "$RISK_SCORE >= $THRESHOLD" | bc -l) )); then
+            echo "::error::Risk score ${RISK_SCORE} exceeds threshold ${THRESHOLD}"
+            exit 1
+          fi

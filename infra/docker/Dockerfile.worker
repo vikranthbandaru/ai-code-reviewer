@@ -1,0 +1,79 @@
+# Reviewer Worker Dockerfile
+FROM node:20-bookworm AS base
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+# Install static analysis tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    golang-go \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python tools
+RUN pip3 install --break-system-packages ruff bandit semgrep
+
+# Install Go tools
+RUN go install github.com/securego/gosec/v2/cmd/gosec@latest \
+    && go install honnef.co/go/tools/cmd/staticcheck@latest
+
+ENV PATH="$PATH:/root/go/bin"
+
+# Copy workspace files
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY tsconfig.base.json ./
+COPY packages/core/package.json ./packages/core/
+COPY apps/reviewer-worker/package.json ./apps/reviewer-worker/
+
+# Install dependencies
+FROM base AS deps
+RUN pnpm install --frozen-lockfile
+
+# Build
+FROM deps AS build
+COPY packages/core ./packages/core
+COPY apps/reviewer-worker ./apps/reviewer-worker
+RUN pnpm --filter @ai-reviewer/core build
+RUN pnpm --filter @ai-reviewer/reviewer-worker build
+
+# Production image (needs tools installed)
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python tools
+RUN pip3 install --break-system-packages ruff bandit semgrep
+
+# Copy Go tools from build
+COPY --from=build /root/go/bin /usr/local/bin
+
+# Create non-root user
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 --gid nodejs worker
+
+# Copy built files
+COPY --from=build /app/packages/core/dist ./packages/core/dist
+COPY --from=build /app/packages/core/package.json ./packages/core/
+COPY --from=build /app/apps/reviewer-worker/dist ./apps/reviewer-worker/dist
+COPY --from=build /app/apps/reviewer-worker/package.json ./apps/reviewer-worker/
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+
+USER worker
+
+CMD ["node", "apps/reviewer-worker/dist/index.js"]

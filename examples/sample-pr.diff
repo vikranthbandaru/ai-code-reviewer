@@ -1,0 +1,68 @@
+diff --git a/src/api/auth.ts b/src/api/auth.ts
+new file mode 100644
+index 0000000..abc1234
+--- /dev/null
++++ b/src/api/auth.ts
+@@ -0,0 +1,45 @@
++import { Request, Response } from 'express';
++import { db } from '../db';
++
++export async function login(req: Request, res: Response) {
++  const { username, password } = req.body;
++  
++  // SQL Injection vulnerability - constructing query with user input
++  const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
++  const user = await db.query(query);
++  
++  if (user.rows.length > 0) {
++    // Hardcoded secret - should use environment variable
++    const token = jwt.sign({ id: user.rows[0].id }, 'super-secret-key-123');
++    res.json({ token });
++  } else {
++    res.status(401).json({ error: 'Invalid credentials' });
++  }
++}
++
++export async function getUserProfile(req: Request, res: Response) {
++  const userId = req.params.id;
++  
++  // Missing input validation
++  const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
++  
++  // Potential null pointer dereference
++  const user = result.rows[0];
++  res.json({
++    name: user.name,
++    email: user.email,
++    // Exposing sensitive data
++    ssn: user.ssn,
++    password_hash: user.password_hash
++  });
++}
++
++export function validateEmail(email: string): boolean {
++  // ReDoS vulnerability - catastrophic backtracking
++  const regex = /^([a-zA-Z0-9]+)*@([a-zA-Z0-9]+)*\.([a-zA-Z0-9]+)*$/;
++  return regex.test(email);
++}
++
++export async function deleteUser(req: Request, res: Response) {
++  // Command injection vulnerability
++  const userId = req.params.id;
++  exec(`rm -rf /data/users/${userId}`);
++  res.json({ success: true });
++}
+diff --git a/package.json b/package.json
+index def5678..ghi9012
+--- a/package.json
++++ b/package.json
+@@ -10,6 +10,8 @@
+   "dependencies": {
+     "express": "^4.18.0",
+     "jsonwebtoken": "^8.5.1",
+-    "pg": "^8.7.0"
++    "pg": "^8.7.0",
++    "lodash": "4.17.20",
++    "axios": "0.21.1"
+   }
+ }

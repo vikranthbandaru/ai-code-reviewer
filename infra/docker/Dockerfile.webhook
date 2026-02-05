@@ -1,0 +1,49 @@
+# Webhook Server Dockerfile
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+# Copy workspace files
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY tsconfig.base.json ./
+COPY packages/core/package.json ./packages/core/
+COPY apps/webhook-server/package.json ./apps/webhook-server/
+
+# Install dependencies
+FROM base AS deps
+RUN pnpm install --frozen-lockfile
+
+# Build
+FROM deps AS build
+COPY packages/core ./packages/core
+COPY apps/webhook-server ./apps/webhook-server
+RUN pnpm --filter @ai-reviewer/core build
+RUN pnpm --filter @ai-reviewer/webhook-server build
+
+# Production image
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 webhook
+
+# Copy built files
+COPY --from=build /app/packages/core/dist ./packages/core/dist
+COPY --from=build /app/packages/core/package.json ./packages/core/
+COPY --from=build /app/apps/webhook-server/dist ./apps/webhook-server/dist
+COPY --from=build /app/apps/webhook-server/package.json ./apps/webhook-server/
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+
+USER webhook
+
+EXPOSE 3000
+
+CMD ["node", "apps/webhook-server/dist/index.js"]

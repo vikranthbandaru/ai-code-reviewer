@@ -1,0 +1,38 @@
+{
+    "name": "@ai-reviewer/core",
+    "version": "1.0.0",
+    "description": "Core utilities and schemas for AI Code Reviewer",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./schemas": {
+            "types": "./dist/schemas/index.d.ts",
+            "import": "./dist/schemas/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc --noEmit",
+        "clean": "rimraf dist"
+    },
+    "dependencies": {
+        "zod": "^3.25.76"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "rimraf": "^5.0.0",
+        "typescript": "^5.4.0",
+        "vitest": "^2.0.0"
+    }
+}

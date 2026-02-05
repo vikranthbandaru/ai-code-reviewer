@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reviewer-worker
+  namespace: ai-reviewer
+  labels:
+    app: reviewer-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reviewer-worker
+  template:
+    metadata:
+      labels:
+        app: reviewer-worker
+    spec:
+      containers:
+        - name: reviewer-worker
+          image: ai-reviewer/reviewer-worker:latest
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: QUEUE_BACKEND
+              value: redis
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: LLM_PROVIDER
+              value: openai
+            - name: SEMGREP_RULES
+              value: auto
+            - name: LOG_JSON
+              value: "true"
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: github-app-credentials
+                  key: GITHUB_APP_ID
+            - name: GITHUB_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: github-app-credentials
+                  key: GITHUB_PRIVATE_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-credentials
+                  key: OPENAI_API_KEY
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reviewer-worker-hpa
+  namespace: ai-reviewer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reviewer-worker
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

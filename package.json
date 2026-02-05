@@ -1,0 +1,36 @@
+{
+  "name": "ai-code-reviewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade AI-powered code reviewer for GitHub Pull Requests",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "dev:webhook": "cd apps/webhook-server && npx tsx src/index.ts",
+    "dev:smee": "npx smee -u https://smee.io/Mb3vPxMca3kTvbl -t http://localhost:3000/webhook",
+    "test": "pnpm -r test",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "prettier": "^3.2.0",
+    "rimraf": "^5.0.0",
+    "smee-client": "^5.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
