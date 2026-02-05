@@ -4,12 +4,12 @@ A production-grade AI-powered code review system that automatically analyzes pul
 
 ## Features
 
-- 🔒 **Security Analysis**: SQL injection, XSS, command injection, hardcoded secrets
-- 🐛 **Bug Detection**: Null pointer dereferences, race conditions, logic errors
-- ⚡ **Performance**: N+1 queries, memory leaks, inefficient algorithms
-- 📦 **Dependency Scanning**: CVE detection via OSV API
-- 🤖 **AI-Powered**: Uses LLMs for deep code understanding
-- 🌐 **Multi-Language**: TypeScript/JavaScript, Python, Go
+-  **Security Analysis**: SQL injection, XSS, command injection, hardcoded secrets
+-  **Bug Detection**: Null pointer dereferences, race conditions, logic errors
+-  **Performance**: N+1 queries, memory leaks, inefficient algorithms
+-  **Dependency Scanning**: CVE detection via OSV API
+-  **AI-Powered**: Uses LLMs for deep code understanding
+-  **Multi-Language**: TypeScript/JavaScript, Python, Go
 
 ## Architecture
 
