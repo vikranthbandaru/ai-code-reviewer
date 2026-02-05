@@ -185,6 +185,17 @@ interface ReviewOutput {
   };
 }
 ```
+### Working Model Screenshots
+<img width="2824" height="1610" alt="Screenshot 2026-02-04 200733" src="https://github.com/user-attachments/assets/e558c772-8148-49fa-bbd0-0bdfbfbd9547" />
+
+<img width="2819" height="1579" alt="Screenshot 2026-02-04 200754" src="https://github.com/user-attachments/assets/85eb306c-762f-496e-8307-562a139f0985" />
+
+AI Code Reviewer responding to the security vulnerabilities and code quality Issues from a test repo I pulled. This test repo contains intentionally added vulnerabilities for testing purposes.
+
+
+<img width="2826" height="1561" alt="Screenshot 2026-02-04 200903" src="https://github.com/user-attachments/assets/4afbd5d2-34b2-414a-a3a4-6a8b04a9346a" />
+
+Test vulnerabilities repo preview
 
 ## Development
 
