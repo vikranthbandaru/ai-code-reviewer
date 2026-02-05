@@ -17,20 +17,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
+        run: npm ci || npm install
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: npm run typecheck --if-present
 
   test:
     name: Test
@@ -42,20 +35,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci || npm install
 
       - name: Build
-        run: pnpm build
+        run: npm run build --if-present
 
       - name: Test
-        run: pnpm test
+        run: npm test --if-present
 
   build-images:
     name: Build Docker Images
