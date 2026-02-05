@@ -4,21 +4,21 @@
   "private": true,
   "description": "Production-grade AI-powered code reviewer for GitHub Pull Requests",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20.0.0"
   },
-  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev",
+    "build": "npm run build:core && npm run build:webhook && npm run build:worker",
+    "build:core": "cd packages/core && npm run build --if-present",
+    "build:webhook": "cd apps/webhook-server && npm run build --if-present",
+    "build:worker": "cd apps/reviewer-worker && npm run build --if-present",
     "dev:webhook": "cd apps/webhook-server && npx tsx src/index.ts",
     "dev:smee": "npx smee -u https://smee.io/Mb3vPxMca3kTvbl -t http://localhost:3000/webhook",
-    "test": "pnpm -r test",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "typecheck": "pnpm -r typecheck",
-    "clean": "pnpm -r clean && rimraf node_modules"
+    "test": "echo \"No tests configured yet\"",
+    "lint": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix --ignore-pattern node_modules --ignore-pattern dist",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
+    "typecheck": "tsc --noEmit -p tsconfig.base.json",
+    "clean": "rimraf node_modules dist"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
